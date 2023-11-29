@@ -1,5 +1,5 @@
-istepanov/mongodump
-===================
+Inspired by istepanov/mongodump
+===============================
 
 Docker image with `mongodump`, `cron` and AWS CLI to upload backups to AWS S3.
 
