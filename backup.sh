@@ -6,29 +6,19 @@ echo "Job started: $(date)"
 
 DATE=$(date +%Y%m%d_%H%M%S)
 
-if [[ -z "$TARGET_FOLDER" ]]; then
-    # dump directly to AWS S3
+AWS_BIN=$(which aws)
 
-    if [[ -z "$TARGET_S3_FOLDER" ]]; then
-        >&2 echo "If TARGET_FOLDER is null/unset, TARGET_S3_FOLDER must be set"
-        exit 1
-    fi
+FILE="${TARGET_FOLDER:-/backup}/backup-$DATE.tar.gz"
 
-    mongodump --uri "$MONGO_URI" --gzip --archive | `which aws` s3 cp - "${TARGET_S3_FOLDER%/}/backup-$DATE.tar.gz"
-    echo "Mongo dump uploaded to $TARGET_S3_FOLDER"
-else
-    # save dump locally (and optionally to AWS S3)
+mkdir -p "${TARGET_FOLDER:-/backup}"
+mongodump --uri "$MONGO_URI" --gzip --archive="$FILE"
+echo "Mongo dump saved to $FILE"
 
-    FILE="$TARGET_FOLDER/backup-$DATE.tar.gz"
+${AWS_BIN} s3api put-object --bucket "$BUCKET_NAME" --endpoint-url "$ENDPOINT_URL" --key "${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz" --body "$FILE" --acl "${ACL:-private}"
 
-    mkdir -p "$TARGET_FOLDER"
-    mongodump --uri "$MONGO_URI" --gzip --archive="$FILE"
-    echo "Mongo dump saved to $FILE"
-
-    if [[ -n "$TARGET_S3_FOLDER" ]]; then
-        `which aws` s3 cp "$FILE" "$TARGET_S3_FOLDER"
-        echo "$FILE uploaded to $TARGET_S3_FOLDER"
-    fi
+RET=$?
+if [[ -n "$RET" ]]; then
+    echo "$FILE uploaded to ${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz on $ENDPOINT_URL"
 fi
 
 echo "Job finished: $(date)"
