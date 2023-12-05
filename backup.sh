@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-set -eo pipefail
+set -e
 
 echo "Job started: $(date)"
 
@@ -17,8 +17,10 @@ echo "Mongo dump saved to $FILE"
 ${AWS_BIN} s3api put-object --bucket "$BUCKET_NAME" --endpoint-url "$ENDPOINT_URL" --key "${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz" --body "$FILE" --acl "${ACL:-private}"
 
 RET=$?
-if [[ -n "$RET" ]]; then
-    echo "$FILE uploaded to ${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz on $ENDPOINT_URL"
+if [ "$RET" -eq 0 ]; then
+    echo "$FILE uploaded to ${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz on $ENDPOINT_URL done!"
+else
+    echo "$FILE uploaded to ${TARGET_S3_FOLDER:-mongodump}/backup-$DATE.tar.gz on $ENDPOINT_URL failed"
 fi
 
 echo "Job finished: $(date)"

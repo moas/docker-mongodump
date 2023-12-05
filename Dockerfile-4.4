@@ -1,17 +1,28 @@
 FROM mongo:4.4.1
-MAINTAINER m0as
+MAINTAINER m0as <lasm.landry@gmail.com>
 
-RUN apt-get update && \
-    apt-get install -y cron python3 python3-pip && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /
 
-RUN pip3 install awscli
+COPY * .
 
-ADD backup.sh /backup.sh
-ADD entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chmod +x /backup.sh
+RUN sh setup.sh && rm setup.sh
 
 VOLUME /backup
 
-ENTRYPOINT ["/entrypoint.sh"]
-CMD [""]
+# Mongodb env
+ENV MONGO_URI 'mongodb://mongo:27017'
+
+# S3 env
+ENV TARGET_S3_FOLDER 'mongodump'
+ENV AWS_ACCESS_KEY_ID '**None**'
+ENV AWS_SECRET_ACCESS_KEY '**None**'
+ENV ENDPOINT_URL '**None**'
+ENV BUCKET_NAME '**None**'
+ENV ACL 'private'
+
+# Other env
+ENV CRON_SCHEDULE '**None**'
+ENV TARGET_FOLDER '/backup'
+
+
+CMD ["sh", "run.sh"]
